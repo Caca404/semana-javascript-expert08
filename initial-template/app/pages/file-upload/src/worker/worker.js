@@ -1,6 +1,8 @@
 import VideoProcessor from "./videoProcessor.js";
 import MP4Demuxer from "./mp4Demuxer.js";
 import CanvasRenderer from "./canvasRenderer.js";
+import WebMWriter from '../deps/webm-writer2.js';
+import Service from "./service.js";
 
 
 const resolutionConstraints = {
@@ -35,8 +37,18 @@ const encodeConfig = {
 }
 
 const mp4Demuxer = new MP4Demuxer();
+const service = new Service({
+    url: 'http://localhost:3000'
+})
 const videoProcessor = new VideoProcessor({
-    mp4Demuxer
+    mp4Demuxer,
+    WebMWriter: new WebMWriter({
+        codec: 'VP9',
+        width: encodeConfig.width,
+        height: encodeConfig.height,
+        bitrate: encodeConfig.bitrate
+    }),
+    service
 });
 
 onmessage = async ({data}) =>{
@@ -46,10 +58,9 @@ onmessage = async ({data}) =>{
     await videoProcessor.start({
         file: data.file,
         encodeConfig: encodeConfig,
-        renderFrame: renderFrame
+        renderFrame: renderFrame,
+        sendMessage: (message) => {
+            self.postMessage(message)
+        }
     })
-
-    self.postMessage({
-        status: 'done'
-    });
 }
